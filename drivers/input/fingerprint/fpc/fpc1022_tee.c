@@ -205,8 +205,7 @@ static void fpc1022_get_irqNum(struct fpc1022_data *fpc1022)
 		fpc1022->irq_num = irq_of_parse_and_map(node, 0);	//xpt
 		fpc1022->irq_gpio = of_get_named_gpio(node, "fpc,gpio_irq", 0);
 
-	} else
-		pr_err("%s can't find compatible node\n", __func__);
+	}
 }
 
 static int hw_reset(struct fpc1022_data *fpc1022)
@@ -221,8 +220,6 @@ static int hw_reset(struct fpc1022_data *fpc1022)
 
 	pinctrl_select_state(fpc1022->pinctrl, fpc1022->st_rst_h);
 	usleep_range(FPC1022_RESET_HIGH1_US, FPC1022_RESET_HIGH1_US + 100);
-
-	dev_info(dev, "IRQ after reset %d\n", GPIO_GET(fpc1022->irq_gpio));
 
 	return 0;
 }
@@ -298,26 +295,18 @@ static ssize_t clk_enable_set(struct device *dev,
 			      size_t count)
 {
 	struct fpc1022_data *fpc1022 = dev_get_drvdata(dev);
-	dev_dbg(fpc1022->dev, "why should we set clocks here? i refuse,%s\n",
-		__func__);
-	dev_dbg(fpc1022->dev, " buff is %d, %s\n", *buf, __func__);
 
 	if (fpc1022->spi) {
 		//update spi clk
 		if (*buf == 49)
 			mt_spi_enable_master_clk(fpc1022->spi);
-		dev_dbg(fpc1022->dev, " enable spi clk %s\n", __func__);
 
 		if (*buf == 48)
 			mt_spi_disable_master_clk(fpc1022->spi);
-		dev_dbg(fpc1022->dev, " disable spi clk %s\n", __func__);
+			return 1;
+	} else
 
-		dev_dbg(fpc1022->dev, " spi clk end success%s\n", __func__);
-		return 1;
-	} else {
-		dev_err(fpc1022->dev, " spi clk NULL%s\n", __func__);
 		return 0;
-	}
 
 }
 
@@ -344,7 +333,6 @@ static ssize_t irq_ack(struct device *device,
 		       const char *buffer, size_t count)
 {
 	struct fpc1022_data *fpc1022 = dev_get_drvdata(device);
-	dev_dbg(fpc1022->dev, "%s\n", __func__);
 	return count;
 }
 
@@ -580,11 +568,8 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 	struct device *dev = &pldev->dev;
 	struct device_node *np = dev->of_node;
 
-	dev_info(dev, "%s\n", __func__);
-	dev_info(dev, "%s test new\n", __func__);
 
 	if (!np) {
-		dev_err(dev, "no of node found\n");
 		ret = -EINVAL;
 		goto err_no_of_node;
 	}
@@ -604,7 +589,6 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 
 	fpc1022->pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(fpc1022->pinctrl)) {
-		dev_err(dev, "Cannot find pinctrl!");
 		ret = PTR_ERR(fpc1022->pinctrl);
 		goto err_pinctrl_get;
 	}
@@ -612,21 +596,18 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 	fpc1022->st_irq = pinctrl_lookup_state(fpc1022->pinctrl, "default");
 	if (IS_ERR(fpc1022->st_irq)) {
 		ret = PTR_ERR(fpc1022->st_irq);
-		dev_err(dev, "pinctrl err, irq\n");
 	}			/////////////////////////////////xpt
 
 	fpc1022->st_rst_h =
 	    pinctrl_lookup_state(fpc1022->pinctrl, "reset_high");
 	if (IS_ERR(fpc1022->st_rst_h)) {
 		ret = PTR_ERR(fpc1022->st_rst_h);
-		dev_err(dev, "pinctrl err, rst_high\n");
 		goto err_lookup_state;
 	}
 
 	fpc1022->st_rst_l = pinctrl_lookup_state(fpc1022->pinctrl, "reset_low");
 	if (IS_ERR(fpc1022->st_rst_l)) {
 		ret = PTR_ERR(fpc1022->st_rst_l);
-		dev_err(dev, "pinctrl err, rst_low\n");
 		goto err_lookup_state;
 	}
 	fpc1022_get_irqNum(fpc1022);
@@ -664,7 +645,6 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 	fpc1022->wakeup_enabled = false;
 
 	if (ret) {
-		dev_err(dev, "failed to register input device\n");
 		goto err_register_input;
 	}
 
@@ -680,11 +660,8 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 					NULL, fpc1022_irq_handler, irqf,
 					dev_name(dev), fpc1022);
 
-	if (ret) {
-		dev_err(dev, "could not request irq %d\n", fpc1022->irq_num);
+	if (ret)
 		goto err_request_irq;
-	}
-	dev_info(dev, "requested irq %d\n", fpc1022->irq_num);
 
 	/* Request that the interrupt should be wakeable */
 	enable_irq_wake(fpc1022->irq_num);
@@ -724,7 +701,6 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 	#endif
 
 	hw_reset(fpc1022);
-	dev_info(dev, "%s: ok\n", __func__);
 
 	return ret;
 
@@ -825,8 +801,6 @@ static int spi_read_hwid(struct spi_device *spi, u8 *rx_buf)
 
 #ifdef CONFIG_SPI_MT65XX
 	xfer[0].speed_hz = spi_speed;
-	pr_err("%s %d, now spi-clock:%d\n",
-	       __func__, __LINE__, xfer[0].speed_hz);
 #endif
 
 	spi_message_add_tail(&xfer[0], &msg);
@@ -842,8 +816,6 @@ static int spi_read_hwid(struct spi_device *spi, u8 *rx_buf)
 
 	spi_message_add_tail(&xfer[1], &msg);
 	error = spi_sync(spi, &msg);
-	if (error)
-		dev_err(&spi->dev, "%s : spi_sync failed.\n", __func__);
 
 	memcpy(rx_buf, (tmp_buf + 4), 2);
 
@@ -867,19 +839,12 @@ static int check_hwid(struct spi_device *spi)
 		time_out++;
 
 		hardware_id = ((tmp_buf[0] << 8) | (tmp_buf[1]));
-		pr_err("fpc hardware_id[0]= 0x%x id[1]=0x%x\n", tmp_buf[0],
-		       tmp_buf[1]);
 
 		if ((FPC1022_CHIP_MASK_SENSOR_TYPE & hardware_id) ==
-		    FPC1022_CHIP) {
-			pr_err("fpc match hardware_id = 0x%x is true\n",
-			       hardware_id);
+		    FPC1022_CHIP)
 			error = 0;
-		} else {
-			pr_err("fpc match hardware_id = 0x%x is failed\n",
-			       hardware_id);
+		} else
 			error = -1;
-		}
 
 		if (!error) {
 			return 0;
@@ -895,23 +860,17 @@ static int __init fpc1022_init(void)
 {
 	int error = 0;
 
-	if (goodix_fp_exist) {
-		pr_err
-		    ("%s goodix sensor has been detected, so exit FPC sensor detect.\n",
-		     __func__);
+	if (goodix_fp_exist)
 		return -EINVAL;
-	}
 
 	//workaround to solve two spi device
 	if (spi_fingerprint == NULL)
-		pr_notice("%s Line:%d spi device is NULL,cannot spi transfer\n",
+		pr_debug("%s Line:%d spi device is NULL,cannot spi transfer\n",
 			  __func__, __LINE__);
 	else {
 		error = check_hwid(spi_fingerprint);
 
 		if (error < 0) {
-			pr_notice("%s: %d get chipid fail. now exit\n",
-				  __func__, __LINE__);
 			return -EINVAL;
 		}
 		printk(KERN_INFO
