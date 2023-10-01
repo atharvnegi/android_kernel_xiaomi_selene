@@ -19,6 +19,8 @@ source "drivers/parport/Kconfig"
 
 source "drivers/pnp/Kconfig"
 
+source "drivers/mihw/Kconfig"
+
 source "drivers/block/Kconfig"
 
 source "drivers/nvme/Kconfig"
@@ -78,6 +80,8 @@ source "drivers/power/Kconfig"
 source "drivers/hwmon/Kconfig"
 
 source "drivers/thermal/Kconfig"
+
+source "drivers/trusty/Kconfig"
 
 source "drivers/watchdog/Kconfig"
 
@@ -213,4 +217,9 @@ source "drivers/tee/Kconfig"
 
 source "drivers/mux/Kconfig"
 
+source "drivers/switch/Kconfig"
+
+source "drivers/nfc/Kconfig"
+
+source "drivers/p73-spi/Kconfig"
 endmenu
